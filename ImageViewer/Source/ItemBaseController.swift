@@ -242,13 +242,25 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
         activityIndicatorView.center = view.boundsCenter
 
         if let size = itemView.image?.size , size != CGSize.zero {
-
+            let aspect = size.height / size.width
             let aspectFitItemSize = aspectFitSize(forContentOfSize: size, inBounds: self.scrollView.bounds.size)
-
-            itemView.bounds.size = aspectFitItemSize
-            scrollView.contentSize = itemView.bounds.size
-
-            itemView.center = scrollView.boundsCenter
+            
+            if aspect >= 1.8 {
+                let aspectFillScale = aspectFillZoomScale(forBoundingSize: scrollView.bounds.size, contentSize: aspectFitItemSize)
+                let t = CGAffineTransform(scaleX: aspectFillScale, y: aspectFillScale)
+                let aspectFillSize = aspectFitItemSize.applying(t)
+                itemView.bounds.size = aspectFillSize
+                scrollView.contentSize = itemView.bounds.size
+                
+                itemView.frame.origin = scrollView.bounds.origin
+            } else {
+                itemView.bounds.size = aspectFitItemSize
+                scrollView.contentSize = itemView.bounds.size
+                
+                itemView.center = scrollView.boundsCenter
+            }
+            
+            scrollView.zoomScale = 1.0
         }
     }
 
@@ -277,18 +289,16 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
     @objc func scrollViewDidDoubleTap(_ recognizer: UITapGestureRecognizer) {
 
         let touchPoint = recognizer.location(ofTouch: 0, in: itemView)
-        let aspectFillScale = aspectFillZoomScale(forBoundingSize: scrollView.bounds.size, contentSize: itemView.bounds.size)
+        let aspectFillScale = max(aspectFillZoomScale(forBoundingSize: scrollView.bounds.size, contentSize: itemView.bounds.size), 2)
 
         if (scrollView.zoomScale == 1.0 || scrollView.zoomScale > aspectFillScale) {
 
             let zoomRectangle = zoomRect(ForScrollView: scrollView, scale: aspectFillScale, center: touchPoint)
 
             UIView.animate(withDuration: doubleTapToZoomDuration, animations: { [weak self] in
-
                 self?.scrollView.zoom(to: zoomRectangle, animated: false)
                 })
-        }
-        else  {
+        } else  {
             UIView.animate(withDuration: doubleTapToZoomDuration, animations: {  [weak self] in
 
                 self?.scrollView.setZoomScale(1.0, animated: false)
@@ -299,7 +309,7 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
     @objc func scrollViewDidSwipeToDismiss(_ recognizer: UIPanGestureRecognizer) {
 
         /// A deliberate UX decision...you have to zoom back in to scale 1 to be able to swipe to dismiss. It is difficult for the user to swipe to dismiss from images larger then screen bounds because almost all the time it's not swiping to dismiss but instead panning a zoomed in picture on the canvas.
-        guard scrollView.zoomScale == scrollView.minimumZoomScale else { return }
+        guard scrollView.zoomScale == scrollView.minimumZoomScale || scrollView.zoomScale == 1.0 else { return }
 
         let currentVelocity = recognizer.velocity(in: self.view)
         let currentTouchPoint = recognizer.translation(in: view)
