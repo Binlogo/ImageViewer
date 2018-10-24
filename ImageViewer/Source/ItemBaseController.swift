@@ -264,12 +264,12 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
         }
     }
 
+    // MARK: - Scroll View delegate methods
+    
     public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
-
+        
         return itemView
     }
-
-    // MARK: - Scroll View delegate methods
 
     public func scrollViewDidZoom(_ scrollView: UIScrollView) {
 
@@ -309,7 +309,7 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
     @objc func scrollViewDidSwipeToDismiss(_ recognizer: UIPanGestureRecognizer) {
 
         /// A deliberate UX decision...you have to zoom back in to scale 1 to be able to swipe to dismiss. It is difficult for the user to swipe to dismiss from images larger then screen bounds because almost all the time it's not swiping to dismiss but instead panning a zoomed in picture on the canvas.
-        guard scrollView.zoomScale == scrollView.minimumZoomScale || scrollView.zoomScale == 1.0 else { return }
+        /// guard scrollView.zoomScale == scrollView.minimumZoomScale || scrollView.zoomScale == 1.0 else { return }
 
         let currentVelocity = recognizer.velocity(in: self.view)
         let currentTouchPoint = recognizer.translation(in: view)
@@ -321,7 +321,6 @@ open class ItemBaseController<T: UIView>: UIViewController, ItemController, UIGe
 
         case .began:
             swipeToDismissTransition = GallerySwipeToDismissTransition(scrollView: self.scrollView)
-
 
         case .changed:
             self.handleSwipeToDismissInProgress(swipingToDismissInProgress, forTouchPoint: currentTouchPoint)
